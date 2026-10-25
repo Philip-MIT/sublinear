@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sublinear"
+version = "0.2.3"
+description = "Python SDK for Sublinear foundation reward models for robotics."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Sublinear" },
+]
+keywords = [
+    "robotics",
+    "reinforcement-learning",
+    "reward-models",
+    "video-language-models",
+    "embodied-ai",
+]
+dependencies = [
+    "numpy>=1.24",
+    "opencv-python-headless>=4.8",
+    "requests>=2.31",
+    "imageio",
+    "matplotlib",
+    "imageio_ffmpeg",
+]
+
+[project.optional-dependencies]
+lerobot = ["lerobot>=0.4"]
+
+[project.urls]
+Homepage = "https://sublinear.dev"
+Documentation = "https://sublinear.dev/docs"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["sublinear*"]
+

@@ -1,0 +1,9 @@
+numpy>=1.24
+opencv-python-headless>=4.8
+requests>=2.31
+imageio
+matplotlib
+imageio_ffmpeg
+
+[lerobot]
+lerobot>=0.4
