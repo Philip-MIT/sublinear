@@ -209,7 +209,7 @@ for video_idx in range(len(video_frames_view1)):
 
 ```
 
-## Video frames stitched together
+## Video frames with views stitched together
 
 ```python
 import numpy as np
