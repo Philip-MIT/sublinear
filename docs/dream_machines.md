@@ -163,10 +163,8 @@ video_plot(
 
 ## Video frames separated across views
 
-
 ```python
-from sublinear
-import load_video_frames
+from sublinear import load_video_frames
 
 video_frames_view1 = []
 for path in video_paths_view1:
@@ -207,6 +205,79 @@ for video_idx in range(len(video_frames_view1)):
         fps=5,
     )
 
+
+
+```
+
+## Video frames stitched together
+
+```python
+import numpy as np
+
+# stitching frames for each view from left to right: left_wrist, top, right_wrist 
+video_frames = [
+    [np.concatenate(frames, axis=1) for frames in zip(video1, video2, video3)]
+    for video1, video2, video3 in zip(video_frames_view1, video_frames_view2, video_frames_view3,)
+]
+
+
+# video frames can be numpy arrays, torch tensors, or lists (with frames still as numpy arrays)
+response = client.responses.create(
+    model="dm-1026",
+    task_description='Take an actuator from the box and place it in the tray',
+    video_frames=video_frames,
+    verbose=True
+)
+
+
+# Plot rewards for each episode
+for video_idx in range(len(video_frames_view1)):
+    video_plot(
+        outputs=[{"model": "dm-1026", "rewards": response.rewards[video_idx]}],
+        plot_save_path=f"/data/sls/scratch/pschro/sole/video_frames_video_{video_idx}.mp4",
+        video_frames_view1=video_frames_view1[video_idx],
+        video_frames_view2=video_frames_view2[video_idx],
+        video_frames_view3=video_frames_view3[video_idx],
+        view_type=["left_wrist", "top", "right_wrist"],
+        plot_width_relative_to_video=0.42, # works well when including 3 square views 
+        fps=5,
+    )
+
+
+
+```
+
+
+## Video paths with views already stitched
+```python
+
+# can use example_videos in this repo at https://github.com/Philip-MIT/sublinear/tree/main/example_videos/dream_machines
+
+# VIDEO_DIR = '/path/to/example_videos/dream_machines'
+
+video_paths=[
+    f"{VIDEO_DIR}/eval_actuator_unboxing_pi05_sweep_v2_01_freeze_01_episode_000073_view_stitched.mp4",
+    f"{VIDEO_DIR}/eval_actuator_unboxing_pi05_sweep_v2_01_freeze_01_episode_000000_view_stitched.mp4",
+    f"{VIDEO_DIR}/eval_actuator_unboxing_pi05_sweep_v2_01_freeze_01_episode_000025_view_stitched.mp4",
+]
+
+
+response = client.responses.create(
+    model="dm-1026",
+    task_description='Take an actuator from the box and place it in the tray',
+    video_paths=video_paths,
+    verbose=True
+)
+
+
+for video_idx in range(len(video_paths)):
+    video_plot(
+        outputs=[{"model": "dm-1026", "rewards": response.rewards[video_idx]}],
+        plot_save_path=f"/data/sls/scratch/pschro/sole/video_path_stitched_video_{video_idx}.mp4",
+        video_path=video_paths[video_idx],
+        plot_width_relative_to_video=0.42, # works well when including 3 square views 
+        fps=5,
+    )
 
 
 ```
