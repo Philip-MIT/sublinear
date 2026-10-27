@@ -135,7 +135,19 @@ pq.write_table(pa.Table.from_pylist(rows), Path(dataset.root) / "progress.parque
 
 import pandas as pd
 df = pd.read_parquet(dataset.root / "progress.parquet")
-df.head(100)
+df.head(10)
+#     index  episode_index  frame_index  progress_sparse
+# 0   56737             73            0         0.000000
+# 1   56738             73            1         0.000000
+# 2   56739             73            2         0.000000
+# 3   56740             73            3         0.000000
+# 4   56741             73            4         0.000000
+# ..    ...            ...          ...              ...
+# 95  56832             73           95         0.175882
+# 96  56833             73           96         0.180588
+# 97  56834             73           97         0.185294
+# 98  56835             73           98         0.190000
+# 99  56836             73           99         0.194062
 
 ```
 
