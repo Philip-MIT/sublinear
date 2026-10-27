@@ -26,41 +26,13 @@ client = Sublinear(
 
 `client.create(...)` and `client.responses.create(...)` currently call the same method.
 
-## Minimal example
-
-```python
-response = client.responses.create(
-    model="dm-1026",
-    task_description="Place the object in the tray",
-    video_path="/path/to/episode.mp4",
-    max_frames=50,
-    downsample_to=30,
-)
-
-video_plot(
-    outputs=[
-        {
-            "model": response.model,
-            "rewards": response.rewards[0],
-        }
-    ],
-    plot_save_path="./episode_rewards.mp4",
-    video_path="/path/to/episode.mp4",
-    show_output_text=False,
-)
-```
-
 ## `Sublinear`
 
 ```python
-Sublinear(
-    api_key: str,
-    base_url: str = SUPABASE_FUNCTIONS_URL,
-)
+Sublinear(api_key: str)
 ```
 
 - `api_key` is required and becomes a bearer token.
-- `base_url` is primarily useful for testing or self-hosted deployments.
 - Keep API keys in environment variables.
 
 ## `Sublinear.create()`
@@ -107,6 +79,7 @@ The call is synchronous. It:
 
 Interrupting the wait with `Ctrl-C` requests job cancellation.
 
+
 ### Required arguments
 
 | Argument | Meaning |
@@ -118,13 +91,90 @@ Interrupting the wait with `Ctrl-C` requests job cancellation.
 
 | Family | Arguments |
 |---|---|
-| Generic path | `video_path` or `video_paths` |
-| Numbered path views | `video_paths_view1`, `video_paths_view2`, `video_paths_view3` |
+| LeRobot | `lerobot_dataset`, optionally `episodes` and `lerobot_view_map` |
 | Generic frames | `video_frames` |
 | Numbered frame views | `video_frames_view1`, `video_frames_view2`, `video_frames_view3` |
-| LeRobot | `lerobot_dataset`, optionally `episodes` and `lerobot_view_map` |
+| Generic path | `video_path` or `video_paths` |
+| Numbered path views | `video_paths_view1`, `video_paths_view2`, `video_paths_view3` |
 
 Do not combine path, frame, and LeRobot families. Do not combine a generic source with numbered sources.
+
+
+## LeRobot input
+
+`lerobot_dataset` must be an already-loaded, local `LeRobotDataset` with video files available on disk.
+
+```python
+from lerobot.datasets import LeRobotDataset
+
+episode_ids = [73, 0, 25]
+dataset = LeRobotDataset(
+    repo_id="DreamMachines/eval_actuator_unboxing_pi05_sweep_v2_01_freeze_01_full",
+    episodes=episode_ids,
+    download_videos=True,
+)
+
+response = client.responses.create(
+    model="dm-1026",
+    task_description="Take an actuator from the box and place it in the tray",
+    lerobot_dataset=dataset,
+    episodes=episode_ids,
+    lerobot_view_map={
+        "left_wrist": "observation.images.left_wrist",
+        "static": "observation.images.top",
+        "right_wrist": "observation.images.right_wrist",
+    },
+)
+```
+
+`lerobot_view_map` maps semantic roles to LeRobot feature names:
+
+```text
+role -> dataset feature
+```
+
+Sublinear automatically looks for these defaults when the map is omitted:
+
+```python
+{
+    "static": "observation.images.top",
+    "left_wrist": "observation.images.left_wrist",
+    "right_wrist": "observation.images.right_wrist",
+}
+```
+
+Explicit maps are recommended.
+
+The fast LeRobot path requires:
+
+- MP4-backed video features.
+- RGB rather than depth-video features.
+- Valid FPS metadata.
+- Local video files.
+- No `image_transforms`.
+- No video `delta_timestamps`.
+
+It rejects image-backed camera features because it packages compressed videos without iterating through frame Parquet.
+
+### `episodes`
+
+`episodes` may be:
+
+```python
+episodes=7
+episodes=[7, 2, 19]
+```
+
+The result follows the requested order.
+
+If `episodes=None`:
+
+- The dataset's preselected `dataset.episodes` is used when available.
+- Otherwise all episodes are selected only when their count is within `max_videos`.
+- Large datasets should always pass explicit episode IDs.
+
+Duplicate, negative, unavailable, and excessive episode selections fail locally.
+
 
 ### Local video paths
 
@@ -133,7 +183,7 @@ One episode:
 ```python
 response = client.responses.create(
     model="dm-1026",
-    task_description="Place the object in the tray",
+    task_description="Take an actuator from the box and place it in the tray",
     video_path="/videos/episode.mp4",
 )
 ```
@@ -143,7 +193,7 @@ Multiple episodes:
 ```python
 response = client.responses.create(
     model="dm-1026",
-    task_description="Place the object in the tray",
+    task_description="Take an actuator from the box and place it in the tray",
     video_paths=[
         "/videos/episode_000.mp4",
         "/videos/episode_001.mp4",
@@ -163,18 +213,18 @@ response.rewards[1]  # episode_001.mp4
 ```python
 response = client.responses.create(
     model="dm-1026",
-    task_description="Place the object in the tray",
+    task_description="Take an actuator from the box and place it in the tray",
     video_paths_view1=[
-        "/videos/000_left.mp4",
-        "/videos/001_left.mp4",
+        "/videos/000_left_wrist.mp4",
+        "/videos/001_left_wrist.mp4",
     ],
     video_paths_view2=[
         "/videos/000_static.mp4",
         "/videos/001_static.mp4",
     ],
     video_paths_view3=[
-        "/videos/000_right.mp4",
-        "/videos/001_right.mp4",
+        "/videos/000_right_wrist.mp4",
+        "/videos/001_right_wrist.mp4",
     ],
     view_type=[
         "left_wrist",
@@ -215,7 +265,7 @@ One frame-array episode:
 ```python
 response = client.responses.create(
     model="dm-1026",
-    task_description="Place the object in the tray",
+    task_description="Take an actuator from the box and place it in the tray",
     video_frames=frames_thwc,
     color_order="rgb",
     fps=30,
@@ -227,7 +277,7 @@ Three frame views:
 ```python
 response = client.responses.create(
     model="dm-1026",
-    task_description="Place the object in the tray",
+    task_description="Take an actuator from the box and place it in the tray",
     video_frames_view1=left_frames,
     video_frames_view2=static_frames,
     video_frames_view3=right_frames,
@@ -292,86 +342,13 @@ When using an already-stitched video, pass it as one generic source:
 ```python
 response = client.responses.create(
     model="dm-1026",
-    task_description="Place the object in the tray",
+    task_description="Take an actuator from the box and place it in the tray",
     video_path="/videos/already_stitched.mp4",
 )
 ```
 
 Do not pass the same stitched source as three numbered views.
 
-## LeRobot input
-
-`lerobot_dataset` must be an already-loaded, local `LeRobotDataset` with video files available on disk.
-
-```python
-from lerobot.datasets import LeRobotDataset
-
-dataset = LeRobotDataset(
-    repo_id="organization/dataset",
-    episodes=[0, 1, 2],
-    download_videos=True,
-)
-
-response = client.responses.create(
-    model="dm-1026",
-    task_description="Place the object in the tray",
-    lerobot_dataset=dataset,
-    episodes=[0, 1, 2],
-    lerobot_view_map={
-        "left_wrist": "observation.images.left_wrist",
-        "static": "observation.images.top",
-        "right_wrist": "observation.images.right_wrist",
-    },
-)
-```
-
-`lerobot_view_map` maps semantic roles to LeRobot feature names:
-
-```text
-role -> dataset feature
-```
-
-Sublinear automatically looks for these defaults when the map is omitted:
-
-```python
-{
-    "static": "observation.images.top",
-    "left_wrist": "observation.images.left_wrist",
-    "right_wrist": "observation.images.right_wrist",
-}
-```
-
-Explicit maps are recommended.
-
-The fast LeRobot path requires:
-
-- MP4-backed video features.
-- RGB rather than depth-video features.
-- Valid FPS metadata.
-- Local video files.
-- No `image_transforms`.
-- No video `delta_timestamps`.
-
-It rejects image-backed camera features because it packages compressed videos without iterating through frame Parquet.
-
-### `episodes`
-
-`episodes` may be:
-
-```python
-episodes=7
-episodes=[7, 2, 19]
-```
-
-The result follows the requested order.
-
-If `episodes=None`:
-
-- The dataset's preselected `dataset.episodes` is used when available.
-- Otherwise all episodes are selected only when their count is within `max_videos`.
-- Large datasets should always pass explicit episode IDs.
-
-Duplicate, negative, unavailable, and excessive episode selections fail locally.
 
 ### FFmpeg controls
 
@@ -798,7 +775,7 @@ episode_ids = [7, 2, 19]
 
 response = client.responses.create(
     model="dm-1026",
-    task_description="Place the object in the tray",
+    task_description="Take an actuator from the box and place it in the tray",
     lerobot_dataset=dataset,
     episodes=episode_ids,
     lerobot_view_map=view_map,
