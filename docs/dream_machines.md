@@ -29,7 +29,7 @@ client = Sublinear(api_key=API_KEY)
 
 episode_ids = [73, 0, 25]
 dataset = LeRobotDataset(
-    repo_id="local/actuator_unboxing_fullbox_eval_pi07_padmask_20261001", 
+    repo_id="local/eval_actuator_unboxing_pi05_sweep_v2_01_freeze_01_full", 
     root=f"{DATA_DIR}/eval_actuator_unboxing_pi05_sweep_v2_01_freeze_01_full"
 )
 
@@ -109,6 +109,33 @@ for i in range(len(episode_ids)):
         plot_width_relative_to_video=0.42, # works well when including 3 square views 
     )
 
+
+```
+
+## Write a parquet with the per-timestep rewards
+```python
+from pathlib import Path
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+rows = []
+for episode_id, rewards, mapping in zip(episode_ids, response.rewards, response.frame_mapping, strict=True):
+    start = int(mapping["dataset_from_index"])
+    rows.extend(
+        {
+            "index": start + frame_index,
+            "episode_index": episode_id,
+            "frame_index": frame_index,
+            "progress_sparse": reward / 100.0,
+        }
+        for frame_index, reward in enumerate(rewards)
+    )
+
+pq.write_table(pa.Table.from_pylist(rows), Path(dataset.root) / "progress.parquet",)
+
+import pandas as pd
+df = pd.read_parquet(dataset.root / "progress.parquet")
+df.head(100)
 
 ```
 
