@@ -11,7 +11,7 @@ pip install -U --no-cache-dir sublinear
 - Model seems to perform best when predicting rewards at 30 timesteps per video (downsample_to=30)
 - By default, client submits a maximum of 30 videos (max_videos=30) to the model to be processed in parallel with batched inference
     - can try larger batch sizes, but may lead to crashing
-
+- More detailed docs at: /data/sls/scratch/pschro/sl/create_and_video_plot.md
 
 ## Compute and plot rewards for local lerobot dataset
 
